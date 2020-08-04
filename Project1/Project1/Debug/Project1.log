@@ -1,0 +1,6 @@
+﻿  GameTime.cpp
+  D3D12App.cpp
+C:\Users\lostm\Desktop\DireX\Project1\Project1\D3D12App.cpp(422,29): warning C4244: “=”: 从“UINT64”转换到“LONG_PTR”，可能丢失数据
+  ToolFunc.cpp
+  正在生成代码...
+  Project1.vcxproj -> C:\Users\lostm\Desktop\DireX\Project1\Debug\Project1.exe
