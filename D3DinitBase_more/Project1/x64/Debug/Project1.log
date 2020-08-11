@@ -13,7 +13,7 @@ C:\Users\lostm\Desktop\DireX\Project2\Project1\D3D12App.cpp(401,24): warning C42
 C:\Users\lostm\Desktop\DireX\Project2\Project1\D3D12App.cpp(402,25): warning C4244: “=”: 从“float”转换到“UINT”，可能丢失数据
 C:\Users\lostm\Desktop\DireX\Project2\Project1\D3D12App.cpp(467,22): warning C4244: “=”: 从“float”转换到“LONG”，可能丢失数据
 C:\Users\lostm\Desktop\DireX\Project2\Project1\D3D12App.cpp(468,23): warning C4244: “=”: 从“float”转换到“LONG”，可能丢失数据
-C:\Users\lostm\Desktop\DireX\Project2\Project1\D3D12App.cpp(675,16): warning C4018: “<”: 有符号/无符号不匹配
-C:\Users\lostm\Desktop\DireX\Project2\Project1\D3D12App.cpp(969,73): warning C4267: “初始化”: 从“size_t”转换到“UINT”，可能丢失数据
-C:\Users\lostm\Desktop\DireX\Project2\Project1\D3D12App.cpp(970,79): warning C4267: “初始化”: 从“size_t”转换到“UINT”，可能丢失数据
+C:\Users\lostm\Desktop\DireX\Project2\Project1\D3D12App.cpp(696,21): warning C4018: “<”: 有符号/无符号不匹配
+C:\Users\lostm\Desktop\DireX\Project2\Project1\D3D12App.cpp(998,73): warning C4267: “初始化”: 从“size_t”转换到“UINT”，可能丢失数据
+C:\Users\lostm\Desktop\DireX\Project2\Project1\D3D12App.cpp(999,79): warning C4267: “初始化”: 从“size_t”转换到“UINT”，可能丢失数据
   Project1.vcxproj -> C:\Users\lostm\Desktop\DireX\Project2\x64\Debug\Project2.exe

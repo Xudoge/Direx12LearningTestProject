@@ -488,6 +488,11 @@ void  D3D12App::FlushCmdQueue()
 
 
 	OutputDebugPrintf(  std::to_string(fence->GetCompletedValue()).c_str());
+
+
+	
+	
+
 }
 
 
@@ -577,6 +582,19 @@ ComPtr<ID3D12Resource> D3D12InitApp::CreateDefaultBuff(UINT64 byteSize, const vo
 }
 
 
+void D3D12InitApp::BuildFrameResources()
+{
+	for (int i=0;i<frameResourcesCount;++i)
+	{
+		FrameResourcesArray.push_back(std::make_unique<FrameResources>(
+			d3dDevice.Get(),
+			1,
+			(UINT)allRitems.size()
+			)
+		);
+	}
+}
+
 void D3D12InitApp::BuildRenderItem()
 {
 	auto boxRitem = std::make_unique<RenderItem>();
@@ -661,7 +679,7 @@ void D3D12InitApp::CreateConstantBufferView()
 	D3D12_DESCRIPTOR_HEAP_DESC cbHeapDesc;
 	cbHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	cbHeapDesc.NumDescriptors = objectCount+ 1;
+	cbHeapDesc.NumDescriptors = (objectCount+ 1)*frameResourcesCount;
 	cbHeapDesc.NodeMask = 0;
 	ThrowIfFailed(d3dDevice->CreateDescriptorHeap(&cbHeapDesc, IID_PPV_ARGS(&cbvHeap)));
 
@@ -670,47 +688,55 @@ void D3D12InitApp::CreateConstantBufferView()
 	//定义并获得物体的常量缓冲区，然后得到其首地址
 	//std::unique_ptr<UploadBufferResource<ObjectConstants>> objCB = nullptr;
 	//elementCount为1（1个子物体常量缓冲元素），isConstantBuffer为ture（是常量缓冲区）
-	objCB = std::make_unique<UploadBufferResource<ObjectConstants>>(d3dDevice.Get(), objectCount, true);
+	//objCB = std::make_unique<UploadBufferResource<ObjectConstants>>(d3dDevice.Get(), objectCount, true);
 	
-	for (int i=0;i<objectCount;++i)
+
+	for (int frameIndex=0;frameIndex<frameResourcesCount;++frameIndex)
 	{
-		//获得常量缓冲区首地址
-		D3D12_GPU_VIRTUAL_ADDRESS address_obj;
-		address_obj = objCB->Resource()->GetGPUVirtualAddress();
-		//通过常量缓冲区元素偏移值计算最终的元素地址
-		int cbElementIndex = i;	//常量缓冲区子物体个数（子缓冲区个数）下标
-		address_obj += (cbElementIndex * objConstSize);
+		for (int i = 0; i < objectCount; ++i)
+		{
+			//获得常量缓冲区首地址
+			D3D12_GPU_VIRTUAL_ADDRESS address_obj;
+			address_obj =FrameResourcesArray[frameIndex]->objCB->Resource()->GetGPUVirtualAddress();
+			//通过常量缓冲区元素偏移值计算最终的元素地址
+			int cbElementIndex = i;	//常量缓冲区子物体个数（子缓冲区个数）下标
+			address_obj += (cbElementIndex * objConstSize);
 
-		int heapIndex = i;
-		auto handle_obj = CD3DX12_CPU_DESCRIPTOR_HANDLE(cbvHeap->GetCPUDescriptorHandleForHeapStart());
-		handle_obj.Offset(heapIndex, cbv_srv_uavDescriptorSize);
+			int heapIndex =objectCount*frameIndex+i;
+			auto handle_obj = CD3DX12_CPU_DESCRIPTOR_HANDLE(cbvHeap->GetCPUDescriptorHandleForHeapStart());
+			handle_obj.Offset(heapIndex, cbv_srv_uavDescriptorSize);
 
-		//创建CBV描述符
-		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc_obj;
-		cbvDesc_obj.BufferLocation = address_obj;
-		cbvDesc_obj.SizeInBytes = objConstSize;
-		d3dDevice->CreateConstantBufferView(&cbvDesc_obj, handle_obj);
+			//创建CBV描述符
+			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc_obj;
+			cbvDesc_obj.BufferLocation = address_obj;
+			cbvDesc_obj.SizeInBytes = objConstSize;
+			d3dDevice->CreateConstantBufferView(&cbvDesc_obj, handle_obj);
+
+		}
+	}
+
+
+	//创建第二个cbv
+	for (int frameIndex = 0; frameIndex < frameResourcesCount; ++frameIndex)
+	{
+
+		//passCB = std::make_unique<UploadBufferResource<PassConstants>>(d3dDevice.Get(), 1, true);
+
+		D3D12_GPU_VIRTUAL_ADDRESS address_pass;
+		address_pass = FrameResourcesArray[frameIndex]->passCB->Resource()->GetGPUVirtualAddress();
+		int passElementIndex = 0;	//常量缓冲区元素下标
+		address_pass += (passElementIndex * passConstSize);
+		//由于是第二个所以heapIndex为1
+		int passheapIndex = objectCount*frameResourcesCount+ frameIndex;
+		auto handle_pass = CD3DX12_CPU_DESCRIPTOR_HANDLE(cbvHeap->GetCPUDescriptorHandleForHeapStart());
+		handle_pass.Offset(passheapIndex, cbv_srv_uavDescriptorSize);
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc_pass;
+		cbvDesc_pass.BufferLocation = address_pass;
+		cbvDesc_pass.SizeInBytes = passConstSize;
+		d3dDevice->CreateConstantBufferView(&cbvDesc_pass, handle_pass);
 
 	}
 
-	//创建第二个cbv
-
-	passCB = std::make_unique<UploadBufferResource<PassConstants>>(d3dDevice.Get(), 1, true);
-
-	D3D12_GPU_VIRTUAL_ADDRESS address_pass;
-	address_pass = passCB->Resource()->GetGPUVirtualAddress();
-	int passElementIndex = 0;	//常量缓冲区元素下标
-	address_pass += (passElementIndex * passConstSize);
-	//由于是第二个所以heapIndex为1
-	int passheapIndex = objectCount;
-	auto handle_pass = CD3DX12_CPU_DESCRIPTOR_HANDLE(cbvHeap->GetCPUDescriptorHandleForHeapStart());
-	handle_pass.Offset(passheapIndex, cbv_srv_uavDescriptorSize);
-	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc_pass;
-	cbvDesc_pass.BufferLocation = address_pass;
-	cbvDesc_pass.SizeInBytes = passConstSize;
-	d3dDevice->CreateConstantBufferView(&cbvDesc_pass, handle_pass);
-
-	
 
 }
 
@@ -719,10 +745,9 @@ void D3D12InitApp::Draw()
 {
 
 	//重置cmdAllocator以及cmdList
-	ThrowIfFailed(cmdAllocator->Reset());  //重复使用记录命令的相关内存
-	ThrowIfFailed(cmdList->Reset(cmdAllocator.Get(), PSO.Get())); //重复使用命令列表以及内存
-
-
+	auto currCmdAllocator = currFrameResources->cmdAllocator;
+	ThrowIfFailed(currCmdAllocator->Reset());  //重复使用记录命令的相关内存
+	ThrowIfFailed(cmdList->Reset(currCmdAllocator.Get(), PSO.Get())); //重复使用命令列表以及内存
 
 
 	//将后台缓冲区从呈现状态到渲染目标状态
@@ -769,7 +794,7 @@ void D3D12InitApp::Draw()
 	cmdList->SetGraphicsRootSignature(rootSignature.Get());
 
 	//pass描述符
-	int passCbvIndex = (int)allRitems.size();
+	int passCbvIndex = (int)allRitems.size()*frameResourcesCount+currFrameResourcesIndex;
 	auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(cbvHeap->GetGPUDescriptorHandleForHeapStart());
 	passCbvHandle.Offset(passCbvIndex, cbv_srv_uavDescriptorSize);
 	cmdList->SetGraphicsRootDescriptorTable(1, //根参数的起始索引
@@ -850,8 +875,11 @@ void D3D12InitApp::Draw()
 	ThrowIfFailed(swapChain->Present(0, 0));
 	mCurrentBackBuffer = (mCurrentBackBuffer + 1) % 2;
 
-	FlushCmdQueue();
+	//FlushCmdQueue();
 
+	mCurrentFence++;
+	currFrameResources->fenceCPU = mCurrentFence;
+	cmdQueue->Signal(fence.Get(), mCurrentFence);
 }
 
 
@@ -872,7 +900,7 @@ void D3D12InitApp::DrawRenderIitem()
 		cmdList->IASetIndexBuffer(&GetIbv());
 		cmdList->IASetPrimitiveTopology(ritem->primitiveType);
 
-		UINT objCbvIndex = ritem->objCBIndex;
+		UINT objCbvIndex = currFrameResourcesIndex*(UINT)ritems.size()+ritem->objCBIndex;
 		auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(cbvHeap->GetGPUDescriptorHandleForHeapStart());
 		handle.Offset(objCbvIndex, cbv_srv_uavDescriptorSize);
 		cmdList->SetGraphicsRootDescriptorTable(0, //根参数起始索引
@@ -1114,8 +1142,10 @@ bool D3D12InitApp::Init(HINSTANCE hInstance, int nShowCmd, std::wstring customCa
 	BuildByteCodeAndInputLayout();
 	BuildGeometry();
 	BuildRenderItem();
+	BuildFrameResources();
 	CreateConstantBufferView();
 	BuildPSO();
+	
 
 	ThrowIfFailed(cmdList->Close());
 	ID3D12CommandList* cmdLists[] = { cmdList.Get() };
@@ -1222,8 +1252,24 @@ void D3D12InitApp::OnResize()
 void D3D12InitApp::Update()
 {
 
+	currFrameResourcesIndex = (currFrameResourcesIndex + 1) % frameResourcesCount;
+	currFrameResources = FrameResourcesArray[currFrameResourcesIndex].get();
+
+	if (currFrameResources->fenceCPU!=0&&currFrameResources->fenceCPU>fence->GetCompletedValue())
+	{
+		HANDLE eventHandle = CreateEvent(nullptr, false, false, L"FenceSetDone");
+		ThrowIfFailed(fence->SetEventOnCompletion(currFrameResources->fenceCPU, eventHandle));
+		WaitForSingleObject(eventHandle, INFINITE);
+		CloseHandle(eventHandle);
+	}
+
+
 	ObjectConstants objConstants;
 	PassConstants passConstants;
+
+
+
+
 	//构建观察矩阵
 	float y = radius * sinf(phi);
 	float x = radius * cosf(phi) * sinf(theta);
@@ -1248,20 +1294,21 @@ void D3D12InitApp::Update()
 	//XMMATRIX赋值给XMFLOAT4X4
 	XMStoreFloat4x4(&passConstants.worldViewProj, XMMatrixTranspose(WVP_Matrix));
 	//将数据拷贝至GPU缓存
-	passCB->CopyData(0, passConstants);
+	currFrameResources->passCB->CopyData(0, passConstants);
 
-	;
-
-	for (auto& e:allRitems)
+	for (auto& e : allRitems)
 	{
-		XMFLOAT4X4 eworld = e->world;
-		XMMATRIX w = XMLoadFloat4x4(&eworld);
-		XMStoreFloat4x4(&objConstants.world, XMMatrixTranspose(w));
-		objCB->CopyData(e->objCBIndex, objConstants);
+
+		if (e->numFramesDirty)
+		{
+			XMFLOAT4X4 eworld = e->world;
+			XMMATRIX w = XMLoadFloat4x4(&eworld);
+			XMStoreFloat4x4(&objConstants.world, XMMatrixTranspose(w));
+			currFrameResources->objCB->CopyData(e->objCBIndex, objConstants);
+
+			e->numFramesDirty--;
+		}
 	}
-
-
-
 	
 }
 
@@ -1322,3 +1369,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 }
 
 
+FrameResources::FrameResources(ID3D12Device* device, UINT passCount, UINT objCount)
+{
+	ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,IID_PPV_ARGS(&cmdAllocator)));
+
+	objCB = std::make_unique<UploadBufferResource<ObjectConstants>>(device, objCount, true);
+	passCB = std::make_unique<UploadBufferResource<PassConstants>>(device, passCount, true);
+}
+
+FrameResources::~FrameResources()
+{
+
+}

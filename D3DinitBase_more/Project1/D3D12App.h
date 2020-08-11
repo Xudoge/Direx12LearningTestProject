@@ -6,6 +6,9 @@
 #include "ProceduralGeometry.h"
 
 
+//帧资源总数
+int frameResourcesCount = 3;
+
 //定义结构体 
 //初期的结构体现在废弃
 struct Vertex_Old
@@ -49,7 +52,13 @@ struct RenderItem
 	UINT indexCount=0;
 	UINT startIndexLocation=0;
 	UINT baseVertexLocation=0;
+
+	//当前提交的帧资源数
+	int numFramesDirty= frameResourcesCount;
 };
+
+
+
 
 //实例化顶点结构并填充
 //std::array<Vertex_Old, 8> verties = {
@@ -138,7 +147,25 @@ struct PassConstants
 	XMFLOAT4X4 worldViewProj = MathHelper::Identity4x4();
 };
 
+struct FrameResources
+{
+public:
+	FrameResources() = default;
+	FrameResources(ID3D12Device* device, UINT passCount, UINT objCount);
+	FrameResources(const FrameResources& rhs) = delete;
+	FrameResources& operator = (const FrameResources& rhs) = delete;
+	~FrameResources();
 
+	//每一帧都需要独立的命令分配器
+	ComPtr<ID3D12CommandAllocator> cmdAllocator;
+
+	//每帧都需要独立的资源缓冲区
+	std::unique_ptr<UploadBufferResource<ObjectConstants>> objCB = nullptr;
+	std::unique_ptr<UploadBufferResource<PassConstants>> passCB = nullptr;
+
+	//cpu围栏值
+	UINT64 fenceCPU = 0;
+};
 
 LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lparam);
 
@@ -328,7 +355,7 @@ public:
 	//将cpu的顶点数据复制到GPU上，先创建上传堆，然后创建gpu只读的默认堆，将数据复制。返回默认堆
 	ComPtr<ID3D12Resource> CreateDefaultBuff(UINT64 byteSize, const void* initData, ComPtr<ID3D12Resource>& uploadBuffer);
 
-	
+	void BuildFrameResources();
 	void BuildRootSignature();
 	void BuildByteCodeAndInputLayout();
 	void BuildGeometry();
@@ -423,8 +450,14 @@ private:
 	//无序映射表 对应的名字字符和SubmeshGeometry
 	std::unordered_map<std::string, SubmeshGeometry> DrawArgs;
 
-
+	//渲染items
 	std::vector<std::unique_ptr<RenderItem>> allRitems;
+
+	
+	std::vector<std::unique_ptr<FrameResources>> FrameResourcesArray;
+	//当前的帧资源index
+	int currFrameResourcesIndex=0;
+	FrameResources* currFrameResources;
 };
 
 
