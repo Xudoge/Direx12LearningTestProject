@@ -577,9 +577,83 @@ ComPtr<ID3D12Resource> D3D12InitApp::CreateDefaultBuff(UINT64 byteSize, const vo
 }
 
 
+void D3D12InitApp::BuildRenderItem()
+{
+	auto boxRitem = std::make_unique<RenderItem>();
+
+	XMStoreFloat4x4(&(boxRitem->world), XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 0.5f, 0.0f));
+	boxRitem->objCBIndex = 0; //box常量数据（world矩阵）在objConstantBuffer索引0上
+	boxRitem->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	boxRitem->indexCount = DrawArgs["box"].indexCount;
+	boxRitem->baseVertexLocation = DrawArgs["box"].baseVertexLocation;
+	boxRitem->startIndexLocation = DrawArgs["box"].startIndexLocation;
+	allRitems.push_back(std::move(boxRitem));
+
+
+	auto gridRitem = std::make_unique<RenderItem>();
+	gridRitem->world = MathHelper::Identity4x4();
+	gridRitem->objCBIndex = 1;//BOX常量数据（world矩阵）在objConstantBuffer索引1上
+	gridRitem->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	gridRitem->indexCount = DrawArgs["grid"].indexCount;
+	gridRitem->baseVertexLocation = DrawArgs["grid"].baseVertexLocation;
+	gridRitem->startIndexLocation = DrawArgs["grid"].startIndexLocation;
+	allRitems.push_back(std::move(gridRitem));
+
+
+	UINT fllowObjCBIndex = 2;
+	for (int i = 0; i < 5; i++)
+	{
+		auto leftCylinderRitem = std::make_unique<RenderItem>();
+		auto rightCylinderRitem = std::make_unique<RenderItem>();
+		auto leftSphereRitem = std::make_unique<RenderItem>();
+		auto rightSphereRitem = std::make_unique<RenderItem>();
+
+
+		XMMATRIX leftCylWorld = XMMatrixTranslation(-5.0f, 1.5f, -10.0f + i * 5.0f);
+		XMMATRIX rightCylWorld = XMMatrixTranslation(+5.0f, 1.5f, -10.0f + i * 5.0f);
+		XMMATRIX leftSphereWorld = XMMatrixTranslation(-5.0f, 3.5f, -10.0f + i * 5.0f);
+		XMMATRIX rightSphereWorld = XMMatrixTranslation(+5.0f, 3.5f, -10.0f + i * 5.0f);
+		//左边5个圆柱
+		XMStoreFloat4x4(&(leftCylinderRitem->world), leftCylWorld);
+		//此处的索引随着循环不断加1（注意：这里是先赋值再++）
+		leftCylinderRitem->objCBIndex = fllowObjCBIndex++;
+		leftCylinderRitem->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		leftCylinderRitem->indexCount = DrawArgs["cylinder"].indexCount;
+		leftCylinderRitem->baseVertexLocation = DrawArgs["cylinder"].baseVertexLocation;
+		leftCylinderRitem->startIndexLocation = DrawArgs["cylinder"].startIndexLocation;
+		//右边5个圆柱
+		XMStoreFloat4x4(&(rightCylinderRitem->world), rightCylWorld);
+		rightCylinderRitem->objCBIndex = fllowObjCBIndex++;
+		rightCylinderRitem->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		rightCylinderRitem->indexCount = DrawArgs["cylinder"].indexCount;
+		rightCylinderRitem->baseVertexLocation = DrawArgs["cylinder"].baseVertexLocation;
+		rightCylinderRitem->startIndexLocation = DrawArgs["cylinder"].startIndexLocation;
+		//左边5个球
+		XMStoreFloat4x4(&(leftSphereRitem->world), leftSphereWorld);
+		leftSphereRitem->objCBIndex = fllowObjCBIndex++;
+		leftSphereRitem->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		leftSphereRitem->indexCount = DrawArgs["sphere"].indexCount;
+		leftSphereRitem->baseVertexLocation = DrawArgs["sphere"].baseVertexLocation;
+		leftSphereRitem->startIndexLocation = DrawArgs["sphere"].startIndexLocation;
+		//右边5个球
+		XMStoreFloat4x4(&(rightSphereRitem->world), rightSphereWorld);
+		rightSphereRitem->objCBIndex = fllowObjCBIndex++;
+		rightSphereRitem->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		rightSphereRitem->indexCount = DrawArgs["sphere"].indexCount;
+		rightSphereRitem->baseVertexLocation = DrawArgs["sphere"].baseVertexLocation;
+		rightSphereRitem->startIndexLocation = DrawArgs["sphere"].startIndexLocation;
+
+		allRitems.push_back(std::move(leftCylinderRitem));
+		allRitems.push_back(std::move(rightCylinderRitem));
+		allRitems.push_back(std::move(leftSphereRitem));
+		allRitems.push_back(std::move(rightSphereRitem));
+	}
+}
+
 void D3D12InitApp::CreateConstantBufferView()
 {
 	//设置常量缓冲区
+	UINT objectCount = (UINT)allRitems.size();//物体总个数（包括实例）
 	UINT objConstSize = CalcConstantBufferByteSize(sizeof(ObjectConstants));
 	UINT passConstSize = CalcConstantBufferByteSize(sizeof(PassConstants));
 
@@ -587,7 +661,7 @@ void D3D12InitApp::CreateConstantBufferView()
 	D3D12_DESCRIPTOR_HEAP_DESC cbHeapDesc;
 	cbHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	cbHeapDesc.NumDescriptors = 2;
+	cbHeapDesc.NumDescriptors = objectCount+ 1;
 	cbHeapDesc.NodeMask = 0;
 	ThrowIfFailed(d3dDevice->CreateDescriptorHeap(&cbHeapDesc, IID_PPV_ARGS(&cbvHeap)));
 
@@ -596,26 +670,28 @@ void D3D12InitApp::CreateConstantBufferView()
 	//定义并获得物体的常量缓冲区，然后得到其首地址
 	//std::unique_ptr<UploadBufferResource<ObjectConstants>> objCB = nullptr;
 	//elementCount为1（1个子物体常量缓冲元素），isConstantBuffer为ture（是常量缓冲区）
-	objCB = std::make_unique<UploadBufferResource<ObjectConstants>>(d3dDevice.Get(), 1, true);
+	objCB = std::make_unique<UploadBufferResource<ObjectConstants>>(d3dDevice.Get(), objectCount, true);
 	
+	for (int i=0;i<objectCount;++i)
+	{
+		//获得常量缓冲区首地址
+		D3D12_GPU_VIRTUAL_ADDRESS address_obj;
+		address_obj = objCB->Resource()->GetGPUVirtualAddress();
+		//通过常量缓冲区元素偏移值计算最终的元素地址
+		int cbElementIndex = i;	//常量缓冲区子物体个数（子缓冲区个数）下标
+		address_obj += (cbElementIndex * objConstSize);
 
-	//获得常量缓冲区首地址
-	D3D12_GPU_VIRTUAL_ADDRESS address_obj;
-	address_obj = objCB->Resource()->GetGPUVirtualAddress();
-	//通过常量缓冲区元素偏移值计算最终的元素地址
-	int cbElementIndex = 0;	//常量缓冲区子物体个数（子缓冲区个数）下标
-	address_obj += (cbElementIndex * objConstSize);
+		int heapIndex = i;
+		auto handle_obj = CD3DX12_CPU_DESCRIPTOR_HANDLE(cbvHeap->GetCPUDescriptorHandleForHeapStart());
+		handle_obj.Offset(heapIndex, cbv_srv_uavDescriptorSize);
 
-	int heapIndex = 0;
-	auto handle_obj = CD3DX12_CPU_DESCRIPTOR_HANDLE(cbvHeap->GetCPUDescriptorHandleForHeapStart());
-	handle_obj.Offset(heapIndex, cbv_srv_uavDescriptorSize);
+		//创建CBV描述符
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc_obj;
+		cbvDesc_obj.BufferLocation = address_obj;
+		cbvDesc_obj.SizeInBytes = objConstSize;
+		d3dDevice->CreateConstantBufferView(&cbvDesc_obj, handle_obj);
 
-	//创建CBV描述符
-	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc_obj;
-	cbvDesc_obj.BufferLocation = address_obj;
-	cbvDesc_obj.SizeInBytes = objConstSize;
-	d3dDevice->CreateConstantBufferView(&cbvDesc_obj, handle_obj);
-
+	}
 
 	//创建第二个cbv
 
@@ -626,15 +702,15 @@ void D3D12InitApp::CreateConstantBufferView()
 	int passElementIndex = 0;	//常量缓冲区元素下标
 	address_pass += (passElementIndex * passConstSize);
 	//由于是第二个所以heapIndex为1
-	heapIndex = 1;
+	int passheapIndex = objectCount;
 	auto handle_pass = CD3DX12_CPU_DESCRIPTOR_HANDLE(cbvHeap->GetCPUDescriptorHandleForHeapStart());
-	handle_pass.Offset(heapIndex, cbv_srv_uavDescriptorSize);
+	handle_pass.Offset(passheapIndex, cbv_srv_uavDescriptorSize);
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc_pass;
 	cbvDesc_pass.BufferLocation = address_pass;
 	cbvDesc_pass.SizeInBytes = passConstSize;
 	d3dDevice->CreateConstantBufferView(&cbvDesc_pass, handle_pass);
 
-
+	
 
 }
 
@@ -644,13 +720,13 @@ void D3D12InitApp::Draw()
 
 	//重置cmdAllocator以及cmdList
 	ThrowIfFailed(cmdAllocator->Reset());  //重复使用记录命令的相关内存
-	ThrowIfFailed(cmdList->Reset(cmdAllocator.Get(),PSO.Get())); //重复使用命令列表以及内存
+	ThrowIfFailed(cmdList->Reset(cmdAllocator.Get(), PSO.Get())); //重复使用命令列表以及内存
 
-	
 
-	
+
+
 	//将后台缓冲区从呈现状态到渲染目标状态
-	
+
 	cmdList->ResourceBarrier(1,
 		&CD3DX12_RESOURCE_BARRIER::Transition(swapChainBuffer[mCurrentBackBuffer].Get(),//转换资源为后台缓冲区资源
 			D3D12_RESOURCE_STATE_PRESENT,
@@ -662,7 +738,7 @@ void D3D12InitApp::Draw()
 	cmdList->RSSetViewports(1, &viewPort);
 	cmdList->RSSetScissorRects(1, &scissorRect);
 
-	
+
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvHeap->GetCPUDescriptorHandleForHeapStart(), mCurrentBackBuffer, rtvDescriptorSize);
 	cmdList->ClearRenderTargetView(rtvHandle, Colors::AliceBlue, 0, nullptr);//清除RT，并且不设置裁剪矩形
 
@@ -675,7 +751,7 @@ void D3D12InitApp::Draw()
 		0,	//裁剪矩形数量
 		nullptr);	//裁剪矩形指针
 
-	
+
 
 	//指定要渲染的缓冲区  
 	cmdList->OMSetRenderTargets(1,//待绑定的RTV数量
@@ -684,43 +760,77 @@ void D3D12InitApp::Draw()
 		&dsvHandle				//指向DSV的指针
 	);
 
-	
+
 
 	//设置CBV描述符堆
 	ID3D12DescriptorHeap* descriHeaps[] = { cbvHeap.Get() };//注意这里之所以是数组，是因为还可能包含SRV和UAV，而这里我们只用到了CBV
 	cmdList->SetDescriptorHeaps(_countof(descriHeaps), descriHeaps);
 	//设置根签名
 	cmdList->SetGraphicsRootSignature(rootSignature.Get());
-	//设置顶点缓冲区
+
+	//pass描述符
+	int passCbvIndex = (int)allRitems.size();
+	auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(cbvHeap->GetGPUDescriptorHandleForHeapStart());
+	passCbvHandle.Offset(passCbvIndex, cbv_srv_uavDescriptorSize);
+	cmdList->SetGraphicsRootDescriptorTable(1, //根参数的起始索引
+		passCbvHandle);
+
+	//obj描述符
+	DrawRenderIitem();
+
+
+
+	////设置顶点缓冲区
 	//cmdList->IASetVertexBuffers(0, 1, &GetVbv());
 
-	cmdList->IASetVertexBuffers(0, 1, &GetVbv_Pos());
-	cmdList->IASetVertexBuffers(1, 1, &GetVbv_Color());
-	//设置索引缓冲区
-	cmdList->IASetIndexBuffer(&GetIbv());
-	//将图元拓扑类型传入流水线
-	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	//设置根描述符表
+	///*cmdList->IASetVertexBuffers(0, 1, &GetVbv_Pos());
+	//cmdList->IASetVertexBuffers(1, 1, &GetVbv_Color());*/
+	////设置索引缓冲区
+	//cmdList->IASetIndexBuffer(&GetIbv());
+	////将图元拓扑类型传入流水线
+	//cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	////设置根描述符表
 
-	auto handle =CD3DX12_GPU_DESCRIPTOR_HANDLE(cbvHeap->GetGPUDescriptorHandleForHeapStart());
-	int HeadIndex = 0;
-	handle.Offset(HeadIndex, cbv_srv_uavDescriptorSize);
-	cmdList->SetGraphicsRootDescriptorTable(0, //根参数的起始索引
-		handle);
+	//auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(cbvHeap->GetGPUDescriptorHandleForHeapStart());
+	//int HeadIndex = 0;
+	//handle.Offset(HeadIndex, cbv_srv_uavDescriptorSize);
+	//cmdList->SetGraphicsRootDescriptorTable(0, //根参数的起始索引
+	//	handle);
 
-	handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(cbvHeap->GetGPUDescriptorHandleForHeapStart());
-	HeadIndex = 1;
-	handle.Offset(HeadIndex, cbv_srv_uavDescriptorSize);
-	cmdList->SetGraphicsRootDescriptorTable(1, //根参数的起始索引
-		handle);
+	//handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(cbvHeap->GetGPUDescriptorHandleForHeapStart());
+	//HeadIndex = 1;
+	//handle.Offset(HeadIndex, cbv_srv_uavDescriptorSize);
+	//cmdList->SetGraphicsRootDescriptorTable(1, //根参数的起始索引
+	//	handle);
 
 
-	//绘制顶点（通过索引缓冲区绘制）
-	cmdList->DrawIndexedInstanced(sizeof(indices), //每个实例要绘制的索引数
-		1,	//实例化个数
-		0,	//起始索引位置
-		0,	//子物体起始索引在全局索引中的位置
-		0);
+	////绘制顶点（通过索引缓冲区绘制）
+	////cmdList->DrawIndexedInstanced(sizeof(indices), //每个实例要绘制的索引数
+	////	1,	//实例化个数
+	////	0,	//起始索引位置
+	////	0,	//子物体起始索引在全局索引中的位置
+	////	0);
+	//cmdList->DrawIndexedInstanced(DrawArgs["box"].indexCount,
+	//	1,
+	//	DrawArgs["box"].startIndexLocation, //起始索引位置
+	//	DrawArgs["box"].baseVertexLocation, //子物体的顶点起始位置
+	//	0 //实例化的高级技术，暂时设置为0
+	//	);
+	//cmdList->DrawIndexedInstanced(DrawArgs["grid"].indexCount, //每个实例要绘制的索引数
+	//	1,	//实例化个数
+	//	DrawArgs["grid"].startIndexLocation,	//起始索引位置
+	//	DrawArgs["grid"].baseVertexLocation,	//子物体起始索引在全局索引中的位置
+	//	0);	//实例化的高级技术，暂时设置为0
+	//cmdList->DrawIndexedInstanced(DrawArgs["sphere"].indexCount, //每个实例要绘制的索引数
+	//	1,	//实例化个数
+	//	DrawArgs["sphere"].startIndexLocation,	//起始索引位置
+	//	DrawArgs["sphere"].baseVertexLocation,	//子物体起始索引在全局索引中的位置
+	//	0);	//实例化的高级技术，暂时设置为0
+	//cmdList->DrawIndexedInstanced(DrawArgs["cylinder"].indexCount, //每个实例要绘制的索引数
+	//	1,	//实例化个数
+	//	DrawArgs["cylinder"].startIndexLocation,	//起始索引位置
+	//	DrawArgs["cylinder"].baseVertexLocation,	//子物体起始索引在全局索引中的位置
+	//	0);	//实例化的高级技术，暂时设置为0
 
 	//等待渲染完成，将后台缓冲区该为呈现状态，使之推到前台缓冲区显示。完了，关闭命令列表，等待传入命令队列
 	cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(swapChainBuffer[mCurrentBackBuffer].Get(),
@@ -744,6 +854,39 @@ void D3D12InitApp::Draw()
 
 }
 
+
+void D3D12InitApp::DrawRenderIitem()
+{
+	std::vector<RenderItem*> ritems;
+	for (auto& e:allRitems)
+	{
+		ritems.push_back(e.get());
+	}
+
+
+	for (size_t i=0;i<ritems.size();i++)
+	{
+		auto ritem = ritems[i];
+
+		cmdList->IASetVertexBuffers(0, 1, &GetVbv());
+		cmdList->IASetIndexBuffer(&GetIbv());
+		cmdList->IASetPrimitiveTopology(ritem->primitiveType);
+
+		UINT objCbvIndex = ritem->objCBIndex;
+		auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(cbvHeap->GetGPUDescriptorHandleForHeapStart());
+		handle.Offset(objCbvIndex, cbv_srv_uavDescriptorSize);
+		cmdList->SetGraphicsRootDescriptorTable(0, //根参数起始索引
+			handle);
+
+		cmdList->DrawIndexedInstanced(ritem->indexCount,
+			1,
+			ritem->startIndexLocation,
+			ritem->baseVertexLocation,
+			0
+		);
+	}
+
+}
 
 void D3D12InitApp::BuildRootSignature()
 {
@@ -813,31 +956,107 @@ void D3D12InitApp::BuildByteCodeAndInputLayout()
 
 void D3D12InitApp::BuildGeometry()
 {
-	//vbByteSize = (UINT)verties.size() * sizeof(Vertex);
 
-	vbByteSize_Pos=(UINT)verties_pos.size() * sizeof(Vertex_Pos);
-	vbByteSize_Color= (UINT)verties_color.size() * sizeof(Vertex_Color);
+	//创建多个几何体
+	ProceduralGeometry proceGeo;
+	MeshData box = proceGeo.CreateBox(1.5f, 0.5f, 1.5f, 3);
+	MeshData grid = proceGeo.CreateGrid(20.0f, 30.0f, 60, 40);
+	MeshData sphere = proceGeo.CreateSphere(0.5f, 20, 20);
+	MeshData cylinder = proceGeo.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
+
+	//计算顶点数地址偏移
+	UINT boxVertexOffset = 0;
+	UINT gridVertexOffset = (UINT)box.Vertices.size();
+	UINT sphereVertexOffset = (UINT)gridVertexOffset + grid.Vertices.size();
+	UINT cylinderVertexOffset = (UINT)sphereVertexOffset + sphere.Vertices.size();
+
+	//计算在索引数组中的偏移
+	UINT boxIndexOffset = 0;
+	UINT gridIndexOffset = (UINT)box.Indices32.size();
+	UINT sphereIndexOffset = (UINT)grid.Indices32.size() + gridIndexOffset;
+	UINT cylinderIndexOffset = (UINT)sphere.Indices32.size() + sphereIndexOffset;
+
+
+
+	SubmeshGeometry boxSubmesh;
+	boxSubmesh.indexCount = (UINT)box.Indices32.size();
+	boxSubmesh.baseVertexLocation = boxVertexOffset;
+	boxSubmesh.startIndexLocation = boxIndexOffset;
+
+
+	SubmeshGeometry gridSubmesh;
+	gridSubmesh.indexCount = (UINT)grid.Indices32.size();
+	gridSubmesh.baseVertexLocation = gridVertexOffset;
+	gridSubmesh.startIndexLocation = gridIndexOffset;
+
+	SubmeshGeometry sphereSubmesh;
+	sphereSubmesh.indexCount = (UINT)sphere.Indices32.size();
+	sphereSubmesh.baseVertexLocation = sphereVertexOffset;
+	sphereSubmesh.startIndexLocation = sphereIndexOffset;
+
+	SubmeshGeometry cylinderSubmesh;
+	cylinderSubmesh.indexCount = (UINT)cylinder.Indices32.size();
+	cylinderSubmesh.baseVertexLocation = cylinderVertexOffset;
+	cylinderSubmesh.startIndexLocation = cylinderIndexOffset;
+
+	//总的缓存个数
+	size_t totalVertexCount = box.Vertices.size() + grid.Vertices.size() + sphere.Vertices.size() + cylinder.Vertices.size();
+	std::vector<Vertex_Old> verties(totalVertexCount);	//给定顶点数组大小
+
+	int k = 0;
+	for (int i = 0; i < box.Vertices.size(); i++, k++)
+	{
+		verties[k].Pos = box.Vertices[i].Position;
+		verties[k].Color = XMCOLOR(DirectX::Colors::Yellow);
+	}
+	for (int i = 0; i < grid.Vertices.size(); i++, k++)
+	{
+		verties[k].Pos = grid.Vertices[i].Position;
+		verties[k].Color = XMCOLOR(DirectX::Colors::Brown);
+	}
+	for (int i = 0; i < sphere.Vertices.size(); i++, k++)
+	{
+		verties[k].Pos = sphere.Vertices[i].Position;
+		verties[k].Color = XMCOLOR(DirectX::Colors::Green);
+	}
+	for (int i = 0; i < cylinder.Vertices.size(); i++, k++)
+	{
+		verties[k].Pos = cylinder.Vertices[i].Position;
+		verties[k].Color = XMCOLOR(DirectX::Colors::Blue);
+	}
+
+	std::vector<std::uint16_t> indices;
+	indices.insert(indices.end(), box.GetIndices16().begin(), box.GetIndices16().end());
+	indices.insert(indices.end(), grid.GetIndices16().begin(), grid.GetIndices16().end());
+	indices.insert(indices.end(), sphere.GetIndices16().begin(), sphere.GetIndices16().end());
+	indices.insert(indices.end(), cylinder.GetIndices16().begin(), cylinder.GetIndices16().end());
+
+	DrawArgs["box"] = boxSubmesh;
+	DrawArgs["grid"] = gridSubmesh;
+	DrawArgs["sphere"] = sphereSubmesh;
+	DrawArgs["cylinder"] = cylinderSubmesh;
+
+	vbByteSize = (UINT)verties.size() * sizeof(Vertex_Old);
+	/*vbByteSize_Pos=(UINT)verties_pos.size() * sizeof(Vertex_Pos);
+	vbByteSize_Color= (UINT)verties_color.size() * sizeof(Vertex_Color);*/
 
 	ibByteSize = (UINT)indices.size() * sizeof(uint16_t);
 
-	//ThrowIfFailed(D3DCreateBlob(vbByteSize, &vertexBufferCpu));	//创建顶点数据内存空间
-
-
-	ThrowIfFailed(D3DCreateBlob(vbByteSize_Pos, &vertexPosBufferCpu));	//创建顶点数据内存空间
-	ThrowIfFailed(D3DCreateBlob(vbByteSize_Color, &vertexColorBufferCpu));
-
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &vertexBufferCpu));	//创建顶点数据内存空间
+	//ThrowIfFailed(D3DCreateBlob(vbByteSize_Pos, &vertexPosBufferCpu));	//创建顶点数据内存空间
+	//ThrowIfFailed(D3DCreateBlob(vbByteSize_Color, &vertexColorBufferCpu));
 
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &indexBufferCpu));	//创建索引数据内存空间
-	//CopyMemory(vertexBufferCpu->GetBufferPointer(), verties.data(), vbByteSize);	//将顶点数据拷贝至顶点系统内存中
 
-	CopyMemory(vertexPosBufferCpu->GetBufferPointer(), verties_pos.data(), vbByteSize_Pos);
-	CopyMemory(vertexColorBufferCpu->GetBufferPointer(), verties_color.data(), vbByteSize_Color);
+	CopyMemory(vertexBufferCpu->GetBufferPointer(), verties.data(), vbByteSize);	//将顶点数据拷贝至顶点系统内存中
+	//CopyMemory(vertexPosBufferCpu->GetBufferPointer(), verties_pos.data(), vbByteSize_Pos);
+	//CopyMemory(vertexColorBufferCpu->GetBufferPointer(), verties_color.data(), vbByteSize_Color);
 
 	CopyMemory(indexBufferCpu->GetBufferPointer(), indices.data(), ibByteSize);	//将索引数据拷贝至索引系统内存中
-	//vertexBufferGpu = CreateDefaultBuff(vbByteSize, verties.data(), vertexBufferUpLoader);
 
-	vertexPosBufferGpu = CreateDefaultBuff(vbByteSize_Pos, verties_pos.data(), vertexPosBufferUpLoader);
-	vertexColorBufferGpu = CreateDefaultBuff(vbByteSize_Color, verties_color.data(), vertexColorBufferUpLoader);
+	vertexBufferGpu = CreateDefaultBuff(vbByteSize, verties.data(), vertexBufferUpLoader);
+	/*vertexPosBufferGpu = CreateDefaultBuff(vbByteSize_Pos, verties_pos.data(), vertexPosBufferUpLoader);
+	vertexColorBufferGpu = CreateDefaultBuff(vbByteSize_Color, verties_color.data(), vertexColorBufferUpLoader);*/
 
 	indexBufferGpu = CreateDefaultBuff(ibByteSize, indices.data(), indexBufferUpLoader);
 }
@@ -890,10 +1109,12 @@ bool D3D12InitApp::Init(HINSTANCE hInstance, int nShowCmd, std::wstring customCa
 
 	ThrowIfFailed(cmdList->Reset(cmdAllocator.Get(), nullptr));
 
-	CreateConstantBufferView();
+	
 	BuildRootSignature();
 	BuildByteCodeAndInputLayout();
 	BuildGeometry();
+	BuildRenderItem();
+	CreateConstantBufferView();
 	BuildPSO();
 
 	ThrowIfFailed(cmdList->Close());
@@ -908,32 +1129,32 @@ bool D3D12InitApp::Init(HINSTANCE hInstance, int nShowCmd, std::wstring customCa
 D3D12_VERTEX_BUFFER_VIEW D3D12InitApp::GetVbv() const
 {
 	D3D12_VERTEX_BUFFER_VIEW vbv;
-	//vbv.BufferLocation = vertexBufferGpu->GetGPUVirtualAddress();//顶点缓冲区资源虚拟地址
-	//vbv.SizeInBytes = vbByteSize;	//顶点缓冲区大小（所有顶点数据大小）
-	vbv.StrideInBytes = sizeof(Vertex);	//每个顶点元素所占用的字节数
+	vbv.BufferLocation = vertexBufferGpu->GetGPUVirtualAddress();//顶点缓冲区资源虚拟地址
+	vbv.SizeInBytes = vbByteSize;	//顶点缓冲区大小（所有顶点数据大小）
+	vbv.StrideInBytes = sizeof(Vertex_Old);	//每个顶点元素所占用的字节数
 
 	return vbv;
 }
 
-D3D12_VERTEX_BUFFER_VIEW D3D12InitApp::GetVbv_Pos() const
-{
-	D3D12_VERTEX_BUFFER_VIEW vbv_pos;
-	vbv_pos.BufferLocation = vertexPosBufferGpu->GetGPUVirtualAddress();//顶点缓冲区资源虚拟地址
-	vbv_pos.SizeInBytes = vbByteSize_Pos;	//顶点缓冲区大小（所有顶点数据大小）
-	vbv_pos.StrideInBytes = sizeof(Vertex_Pos);	//每个顶点元素所占用的字节数
-
-	return vbv_pos;
-}
-
-D3D12_VERTEX_BUFFER_VIEW D3D12InitApp::GetVbv_Color() const
-{
-	D3D12_VERTEX_BUFFER_VIEW vbv_color;
-	vbv_color.BufferLocation = vertexColorBufferGpu->GetGPUVirtualAddress();//顶点缓冲区资源虚拟地址
-	vbv_color.SizeInBytes = vbByteSize_Color;	//顶点缓冲区大小（所有顶点数据大小）
-	vbv_color.StrideInBytes = sizeof(Vertex_Color);	//每个顶点元素所占用的字节数
-
-	return vbv_color;
-}
+//D3D12_VERTEX_BUFFER_VIEW D3D12InitApp::GetVbv_Pos() const
+//{
+//	D3D12_VERTEX_BUFFER_VIEW vbv_pos;
+//	vbv_pos.BufferLocation = vertexPosBufferGpu->GetGPUVirtualAddress();//顶点缓冲区资源虚拟地址
+//	vbv_pos.SizeInBytes = vbByteSize_Pos;	//顶点缓冲区大小（所有顶点数据大小）
+//	vbv_pos.StrideInBytes = sizeof(Vertex_Pos);	//每个顶点元素所占用的字节数
+//
+//	return vbv_pos;
+//}
+//
+//D3D12_VERTEX_BUFFER_VIEW D3D12InitApp::GetVbv_Color() const
+//{
+//	D3D12_VERTEX_BUFFER_VIEW vbv_color;
+//	vbv_color.BufferLocation = vertexColorBufferGpu->GetGPUVirtualAddress();//顶点缓冲区资源虚拟地址
+//	vbv_color.SizeInBytes = vbByteSize_Color;	//顶点缓冲区大小（所有顶点数据大小）
+//	vbv_color.StrideInBytes = sizeof(Vertex_Color);	//每个顶点元素所占用的字节数
+//
+//	return vbv_color;
+//}
 
 
 D3D12_INDEX_BUFFER_VIEW D3D12InitApp::GetIbv() const
@@ -1016,9 +1237,11 @@ void D3D12InitApp::Update()
 
 	//构建投影矩阵
 	XMMATRIX p = XMLoadFloat4x4(&proj);
-	//构建世界矩阵
+	////构建世界矩阵
 	XMMATRIX w = XMLoadFloat4x4(&world);
-	w *= XMMatrixTranslation(0.5f, 0.0f, 0.0f);
+	//w *= XMMatrixTranslation(0.5f, 0.0f, 0.0f);
+
+
 	//矩阵计算
 	XMMATRIX WVP_Matrix = v * p*w;
 
@@ -1027,8 +1250,19 @@ void D3D12InitApp::Update()
 	//将数据拷贝至GPU缓存
 	passCB->CopyData(0, passConstants);
 
-	XMStoreFloat4x4(&objConstants.world, XMMatrixTranspose(w));
-	objCB->CopyData(0, objConstants);
+	;
+
+	for (auto& e:allRitems)
+	{
+		XMFLOAT4X4 eworld = e->world;
+		XMMATRIX w = XMLoadFloat4x4(&eworld);
+		XMStoreFloat4x4(&objConstants.world, XMMatrixTranspose(w));
+		objCB->CopyData(e->objCBIndex, objConstants);
+	}
+
+
+
+	
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int nShowCmd) {

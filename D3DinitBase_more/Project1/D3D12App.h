@@ -1,16 +1,14 @@
 
 #pragma once
 
-#define D3D_DEBUG_INFO
-
 #include "ToolFunc.h"
 #include "GameTime.h"
+#include "ProceduralGeometry.h"
 
 
-
-
-//定义结构体
-struct Vertex
+//定义结构体 
+//初期的结构体现在废弃
+struct Vertex_Old
 {
 	XMFLOAT3 Pos;
 	XMCOLOR Color;
@@ -26,19 +24,44 @@ struct Vertex_Color
 	XMCOLOR Color;
 };
 
+//绘制的子物体属性 也是drawIndexInstance的1，3，4参数
+struct SubmeshGeometry
+{
+	UINT indexCount;
+	UINT startIndexLocation;
+	UINT baseVertexLocation;
+};
 
+//渲染项
+struct RenderItem
+{
+
+	//该几何体的射界矩阵
+	XMFLOAT4X4 world = MathHelper::Identity4x4();
+
+	//该几何体的常量数据在objConstanceBuffer中的索引
+	UINT objCBIndex = -1;
+
+	//该几何体的图元拓扑类型
+	D3D_PRIMITIVE_TOPOLOGY primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	//绘制的子物体属性 也是drawIndexInstance的1，3，4参数
+	UINT indexCount=0;
+	UINT startIndexLocation=0;
+	UINT baseVertexLocation=0;
+};
 
 //实例化顶点结构并填充
-std::array<Vertex, 8> verties = {
-	Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMCOLOR(Colors::White) }),
-	Vertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMCOLOR(Colors::Black) }),
-	Vertex({ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMCOLOR(Colors::Red) }),
-	Vertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMCOLOR(Colors::Green) }),
-	Vertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMCOLOR(Colors::Blue) }),
-	Vertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMCOLOR(Colors::Yellow) }),
-	Vertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMCOLOR(Colors::Cyan) }),
-	Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMCOLOR(Colors::Magenta) })
-};
+//std::array<Vertex_Old, 8> verties = {
+//	Vertex_Old({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMCOLOR(Colors::White) }),
+//	Vertex_Old({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMCOLOR(Colors::Black) }),
+//	Vertex_Old({ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMCOLOR(Colors::Red) }),
+//	Vertex_Old({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMCOLOR(Colors::Green) }),
+//	Vertex_Old({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMCOLOR(Colors::Blue) }),
+//	Vertex_Old({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMCOLOR(Colors::Yellow) }),
+//	Vertex_Old({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMCOLOR(Colors::Cyan) }),
+//	Vertex_Old({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMCOLOR(Colors::Magenta) })
+//};
 
 std::array<Vertex_Pos, 8> verties_pos = {
 	Vertex_Pos({ XMFLOAT3(-1.0f, -1.0f, -1.0f) }),
@@ -66,38 +89,38 @@ std::array<Vertex_Color, 8> verties_color = {
 };
 
 //索引数据
-std::array<std::uint16_t, 36> indices = {
-	//前
-	0,1,2,
-	0,2,3,
-
-	//后
-	4,6,5,
-	4,7,6,
-
-	//左
-	4,5,1,
-	4,1,0,
-
-	//右
-	3,2,6,
-	3,6,7,
-
-	//上
-	1,5,6,
-	1,6,2,
-
-	//下
-	4,0,3,
-	4,3,7
-};
+//std::array<std::uint16_t, 36> indices = {
+//	//前
+//	0,1,2,
+//	0,2,3,
+//
+//	//后
+//	4,6,5,
+//	4,7,6,
+//
+//	//左
+//	4,5,1,
+//	4,1,0,
+//
+//	//右
+//	3,2,6,
+//	3,6,7,
+//
+//	//上
+//	1,5,6,
+//	1,6,2,
+//
+//	//下
+//	4,0,3,
+//	4,3,7
+//};
 
 std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayoutDesc =
 {
 	  { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-	 // { "COLOR", 0, DXGI_FORMAT_B8G8R8A8_UNORM, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	  { "COLOR", 0, DXGI_FORMAT_B8G8R8A8_UNORM, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 
-	   { "COLOR", 0, DXGI_FORMAT_B8G8R8A8_UNORM, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	   /*{ "COLOR", 0, DXGI_FORMAT_B8G8R8A8_UNORM, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }*/
 };
 
 
@@ -305,20 +328,20 @@ public:
 	//将cpu的顶点数据复制到GPU上，先创建上传堆，然后创建gpu只读的默认堆，将数据复制。返回默认堆
 	ComPtr<ID3D12Resource> CreateDefaultBuff(UINT64 byteSize, const void* initData, ComPtr<ID3D12Resource>& uploadBuffer);
 
-
-
-	void CreateConstantBufferView();
+	
 	void BuildRootSignature();
 	void BuildByteCodeAndInputLayout();
 	void BuildGeometry();
+	void BuildRenderItem();
+	void CreateConstantBufferView();
 	void BuildPSO();
 
 	bool Init(HINSTANCE hInstance, int nShowCmd, std::wstring customCaption);
 
 	D3D12_VERTEX_BUFFER_VIEW GetVbv() const;
 
-	D3D12_VERTEX_BUFFER_VIEW GetVbv_Pos() const;
-	D3D12_VERTEX_BUFFER_VIEW GetVbv_Color() const;
+	//D3D12_VERTEX_BUFFER_VIEW GetVbv_Pos() const;
+	//D3D12_VERTEX_BUFFER_VIEW GetVbv_Color() const;
 
 	D3D12_INDEX_BUFFER_VIEW GetIbv() const;
 
@@ -335,37 +358,38 @@ public:
 
 private:
 	virtual void Draw() override; 
+	void DrawRenderIitem();
 	virtual void Update() override;
 
 
 
 
-	//UINT vbByteSize;
+	UINT vbByteSize;
 
-	UINT vbByteSize_Pos;
-	UINT vbByteSize_Color;
+	//UINT vbByteSize_Pos;
+	//UINT vbByteSize_Color;
 
 	UINT ibByteSize;
 	//上传堆
-	//ComPtr<ID3D12Resource> vertexBufferUpLoader = nullptr;
+	ComPtr<ID3D12Resource> vertexBufferUpLoader = nullptr;
 
-	ComPtr<ID3D12Resource> vertexPosBufferUpLoader = nullptr;
-	ComPtr<ID3D12Resource> vertexColorBufferUpLoader = nullptr;
+	//ComPtr<ID3D12Resource> vertexPosBufferUpLoader = nullptr;
+	//ComPtr<ID3D12Resource> vertexColorBufferUpLoader = nullptr;
 
 	ComPtr<ID3D12Resource> indexBufferUpLoader = nullptr;
 	//内存空间缓冲区
-	//ComPtr<ID3DBlob> vertexBufferCpu = nullptr;
+	ComPtr<ID3DBlob> vertexBufferCpu = nullptr;
 
 
-	ComPtr<ID3DBlob> vertexPosBufferCpu = nullptr;
-	ComPtr<ID3DBlob> vertexColorBufferCpu = nullptr;
+	//ComPtr<ID3DBlob> vertexPosBufferCpu = nullptr;
+	//ComPtr<ID3DBlob> vertexColorBufferCpu = nullptr;
 
 	ComPtr<ID3DBlob> indexBufferCpu = nullptr;
 	//GPU创建的缓冲区
-	//ComPtr<ID3D12Resource> vertexBufferGpu =nullptr;
+	ComPtr<ID3D12Resource> vertexBufferGpu =nullptr;
 
-	ComPtr<ID3D12Resource> vertexPosBufferGpu = nullptr;
-	ComPtr<ID3D12Resource> vertexColorBufferGpu = nullptr;
+	//ComPtr<ID3D12Resource> vertexPosBufferGpu = nullptr;
+	//ComPtr<ID3D12Resource> vertexColorBufferGpu = nullptr;
 
 	ComPtr<ID3D12Resource> indexBufferGpu = nullptr;
 
@@ -394,6 +418,13 @@ private:
 	float theta = (float)1.5 * XM_PI;
 	float phi= XM_PIDIV4;
 	float radius = 10.0F;
+
+
+	//无序映射表 对应的名字字符和SubmeshGeometry
+	std::unordered_map<std::string, SubmeshGeometry> DrawArgs;
+
+
+	std::vector<std::unique_ptr<RenderItem>> allRitems;
 };
 
 
