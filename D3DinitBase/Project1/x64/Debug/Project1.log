@@ -1,15 +1,20 @@
-﻿  D3D12App.cpp
-C:\Users\lostm\Desktop\DireX\Project1\Project1\ToolFunc.h(33,1): warning C4005: “_DEBUG”: 宏重定义
-C:\Users\lostm\Desktop\DireX\Project1\Project1\D3D12App.cpp : message : 参见“_DEBUG”的前一个定义
-C:\Users\lostm\Desktop\DireX\Project1\Project1\D3D12App.cpp(65,12): warning C4244: “=”: 从“float”转换到“LONG”，可能丢失数据
-C:\Users\lostm\Desktop\DireX\Project1\Project1\D3D12App.cpp(66,13): warning C4244: “=”: 从“float”转换到“LONG”，可能丢失数据
-C:\Users\lostm\Desktop\DireX\Project1\Project1\D3D12App.cpp(155,3): warning C4244: “参数”: 从“float”转换到“UINT”，可能丢失数据
-C:\Users\lostm\Desktop\DireX\Project1\Project1\D3D12App.cpp(154,3): warning C4244: “参数”: 从“float”转换到“UINT”，可能丢失数据
-C:\Users\lostm\Desktop\DireX\Project1\Project1\D3D12App.cpp(255,22): warning C4244: “return”: 从“LRESULT”转换到“HRESULT”，可能丢失数据
-C:\Users\lostm\Desktop\DireX\Project1\Project1\D3D12App.cpp(338,35): warning C4244: “=”: 从“float”转换到“UINT”，可能丢失数据
-C:\Users\lostm\Desktop\DireX\Project1\Project1\D3D12App.cpp(339,36): warning C4244: “=”: 从“float”转换到“UINT”，可能丢失数据
-C:\Users\lostm\Desktop\DireX\Project1\Project1\D3D12App.cpp(401,24): warning C4244: “=”: 从“float”转换到“UINT64”，可能丢失数据
-C:\Users\lostm\Desktop\DireX\Project1\Project1\D3D12App.cpp(402,25): warning C4244: “=”: 从“float”转换到“UINT”，可能丢失数据
-C:\Users\lostm\Desktop\DireX\Project1\Project1\D3D12App.cpp(467,22): warning C4244: “=”: 从“float”转换到“LONG”，可能丢失数据
-C:\Users\lostm\Desktop\DireX\Project1\Project1\D3D12App.cpp(468,23): warning C4244: “=”: 从“float”转换到“LONG”，可能丢失数据
-  Project1.vcxproj -> C:\Users\lostm\Desktop\DireX\Project1\x64\Debug\Project1.exe
+﻿  GameTime.cpp
+  D3D12App.cpp
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\ToolFunc.h(33,1): warning C4005: “_DEBUG”: 宏重定义
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\D3D12App.cpp : message : 参见“_DEBUG”的前一个定义
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\D3D12App.cpp(65,12): warning C4244: “=”: 从“float”转换到“LONG”，可能丢失数据
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\D3D12App.cpp(66,13): warning C4244: “=”: 从“float”转换到“LONG”，可能丢失数据
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\D3D12App.cpp(155,3): warning C4244: “参数”: 从“float”转换到“UINT”，可能丢失数据
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\D3D12App.cpp(154,3): warning C4244: “参数”: 从“float”转换到“UINT”，可能丢失数据
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\D3D12App.cpp(255,22): warning C4244: “return”: 从“LRESULT”转换到“HRESULT”，可能丢失数据
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\D3D12App.cpp(338,35): warning C4244: “=”: 从“float”转换到“UINT”，可能丢失数据
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\D3D12App.cpp(339,36): warning C4244: “=”: 从“float”转换到“UINT”，可能丢失数据
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\D3D12App.cpp(401,24): warning C4244: “=”: 从“float”转换到“UINT64”，可能丢失数据
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\D3D12App.cpp(402,25): warning C4244: “=”: 从“float”转换到“UINT”，可能丢失数据
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\D3D12App.cpp(467,22): warning C4244: “=”: 从“float”转换到“LONG”，可能丢失数据
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\D3D12App.cpp(468,23): warning C4244: “=”: 从“float”转换到“LONG”，可能丢失数据
+  ToolFunc.cpp
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\ToolFunc.h(33,1): warning C4005: “_DEBUG”: 宏重定义
+C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\Project1\ToolFunc.cpp : message : 参见“_DEBUG”的前一个定义
+  正在生成代码...
+  Project1.vcxproj -> C:\Users\lostm\Desktop\Direx12LearningTestProject\D3DinitBase\x64\Debug\Project1.exe
