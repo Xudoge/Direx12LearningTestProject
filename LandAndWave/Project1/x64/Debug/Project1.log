@@ -1,0 +1,40 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(467,5): warning MSB8028: 中间目录(x64\Debug\)包含从另一个项目(Project1.vcxproj, Project2.vcxproj)共享的文件。   这会导致错误的清除和重新生成行为。
+  D3D12App.cpp
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\sta.h(33,1): warning C4005: “_DEBUG”: 宏重定义
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp : message : 参见“_DEBUG”的前一个定义
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(65,12): warning C4244: “=”: 从“float”转换到“LONG”，可能丢失数据
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(66,13): warning C4244: “=”: 从“float”转换到“LONG”，可能丢失数据
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(155,3): warning C4244: “参数”: 从“float”转换到“UINT”，可能丢失数据
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(154,3): warning C4244: “参数”: 从“float”转换到“UINT”，可能丢失数据
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(255,22): warning C4244: “return”: 从“LRESULT”转换到“HRESULT”，可能丢失数据
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(338,35): warning C4244: “=”: 从“float”转换到“UINT”，可能丢失数据
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(339,36): warning C4244: “=”: 从“float”转换到“UINT”，可能丢失数据
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(401,24): warning C4244: “=”: 从“float”转换到“UINT64”，可能丢失数据
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(402,25): warning C4244: “=”: 从“float”转换到“UINT”，可能丢失数据
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(467,22): warning C4244: “=”: 从“float”转换到“LONG”，可能丢失数据
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(468,23): warning C4244: “=”: 从“float”转换到“LONG”，可能丢失数据
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(696,21): warning C4018: “<”: 有符号/无符号不匹配
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(994,31): error C2065: “gridSubmesh”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(998,2): error C2146: 语法错误: 缺少“;”(在标识符“UINT”的前面)
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(999,31): error C2065: “box”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1001,35): error C2065: “sphere”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1008,32): error C2065: “box”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1008,60): error C2065: “box”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1008,84): error C2661: “std::vector<uint16,std::allocator<uint16>>::insert”: 没有重载函数接受 1 个参数
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1010,32): error C2065: “sphere”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1010,63): error C2065: “sphere”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1010,90): error C2661: “std::vector<uint16,std::allocator<uint16>>::insert”: 没有重载函数接受 1 个参数
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1011,32): error C2065: “cylinder”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1011,65): error C2065: “cylinder”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1011,94): error C2661: “std::vector<uint16,std::allocator<uint16>>::insert”: 没有重载函数接受 1 个参数
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1013,20): error C2065: “boxSubmesh”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1014,21): error C2065: “gridSubmesh”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1015,23): error C2065: “sphereSubmesh”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1016,25): error C2065: “cylinderSubmesh”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1018,21): error C2065: “verties”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1030,2): error C2065: “verties”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1030,2): error C2660: “memcpy”: 函数不接受 2 个参数
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.25.28610\include\vcruntime_string.h(43,15): message : 参见“memcpy”的声明
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1036,50): error C2065: “verties”: 未声明的标识符
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(1036,86): error C2660: “D3D12InitApp::CreateDefaultBuff”: 函数不接受 2 个参数
+C:\Users\lostm\Desktop\DireX\LandAndWave\Project1\D3D12App.cpp(542,38): message : 参见“D3D12InitApp::CreateDefaultBuff”的声明
